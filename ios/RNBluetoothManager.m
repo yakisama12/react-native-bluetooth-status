@@ -15,6 +15,10 @@
 
 
 @implementation RNBluetoothManager
+{
+    bool hasListeners;
+    NSString *stateName;
+}
 
 #pragma mark Initialization
 
@@ -28,6 +32,11 @@
 }
 
 RCT_EXPORT_MODULE();
+
++ (BOOL)requiresMainQueueSetup
+{
+    return YES;
+}
 
 RCT_EXPORT_METHOD(initialize) {
     [self centralManagerDidUpdateState:self.centralManager];
@@ -55,10 +64,20 @@ RCT_EXPORT_METHOD(initialize) {
     return @"unknown";
 }
 
+-(void)startObserving {
+    hasListeners = YES;
+    [self sendEventWithName:@"bluetoothStatus" body:stateName];
+}
+ -(void)stopObserving {
+    hasListeners = NO;
+}
+
 - (void)centralManagerDidUpdateState:(CBCentralManager *)central
 {
-    NSString *stateName = [self centralManagerStateToString:central.state];
-    [self sendEventWithName:@"bluetoothStatus" body:stateName];
+    stateName = [self centralManagerStateToString:central.state];
+    if (hasListeners) {
+        [self sendEventWithName:@"bluetoothStatus" body:stateName];
+    }
 }
 
 - (NSArray<NSString *> *)supportedEvents { return @[@"bluetoothStatus"]; }
